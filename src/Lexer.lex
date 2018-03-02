@@ -13,21 +13,27 @@ import java_cup.runtime.*;
   StringBuffer string = new StringBuffer();
 
   private Symbol symbol(int type) {
-    return new Symbol(type, yyline, yycolumn);
+    return new Symbol(type, yyline+1, yycolumn+1);
   }
 
   private Symbol symbol(int type, Object value) {
-    return new Symbol(type, yyline, yycolumn, value);
+    return new Symbol(type, yyline+1, yycolumn+1, value);
   }
 
-  private Double rational(String rstr){
+  private Double parseRational(String rstr){
   	int pos = rstr.indexOf('_');
   	Integer wholeNum = new Integer(rstr.substring(0, pos));
   	int op = rstr.indexOf('/');
   	Integer numerator = new Integer(rstr.substring(pos+1, op));
   	Integer denominator = new Integer(rstr.substring(op+1, rstr.length()));
-  	return wholeNum + numrator/denominator;
+  	return (Double) (wholeNum + numrator/denominator);
   }
+
+	private void error(){
+		report_error(
+    	"Syntax error at line " + (yyline+1) + ", column "
+				+ (yycolumn+1), null);
+	}
 %}
 
 /* main character classes */
@@ -36,9 +42,9 @@ InputCharacter = [^\r\n]
 WhiteSpace = {LineTerminator} | [ \t\f]
 
 /* comments */
-Comment = {TraditionalComment} | {EndOfLineComment} | {DocumentationComment}
+Comment = {TraditionalComment} | {EndOfLineComment}
 
-TraditionalComment   = "/#" [^#] ~"#/" | "/#" "#"+ "/"
+TraditionalComment   = "/#" ~"#/"
 EndOfLineComment     = "#" {InputCharacter}* {LineTerminator}?
 
 /* identifiers */
@@ -55,7 +61,7 @@ IntegerLiteral = [+-]? {IntegerPart}
 RationalLiteral = ({IntegerLiteral}"_")? {IntegerPart} "/" {IntegerPart}
 FloatLiteral = {IntegerLiteral} "." {IntegerPart}
 
-%state STRING, CHAR, CONTAINER
+%state STRINGLITERAL, CHARLITERAL
 
 %%
 
@@ -64,11 +70,12 @@ FloatLiteral = {IntegerLiteral} "." {IntegerPart}
 	"bool"												 { return symbol(BOOLEAN); }
 	"function"										 { return symbol(FUNCTION); }
 	"thread"										   { return symbol(THREAD); }
-	"dict"										     { yybegin(CONTAINER); return symbol(DICT); }
-	"set"										       { yybegin(CONTAINER); return symbol(SET); }
-	"seq"										       { yybegin(CONTAINER); return symbol(SEQ); }
+	"dict"										     { return symbol(DICT); }
+	"set"										       { return symbol(SET); }
+	"seq"										       { return symbol(SEQ); }
 	"int"										       { return symbol(INT); }
 	"char"										     { return symbol(CHAR); }
+	"string"										   { return symbol(STRING); }
 	"top"										       { return symbol(TOP); }
 	"rat"										       { return symbol(RAT); }
 	"float"										     { return symbol(FLOAT); }
@@ -84,12 +91,12 @@ FloatLiteral = {IntegerLiteral} "." {IntegerPart}
 	"then"										     { return symbol(THEN); }
 	"elif"										     { return symbol(ELIF); }
 	"else"										     { return symbol(ELSE); }
-	"elif"										     { return symbol(ELIF); }
 	"while"										     { return symbol(WHILE); }
 	"break"										     { return symbol(BREAK); }
 	"forall"									     { return symbol(FORALL); }
 	"print"										     { return symbol(PRINT); }
 	"read"										     { return symbol(READ); }
+	"main"										     { return symbol(MAIN); }
 
 	/* boolean literals */
 	"T"										         { return symbol(BOOLEAN_LITERAL, true); }
@@ -102,18 +109,20 @@ FloatLiteral = {IntegerLiteral} "." {IntegerPart}
   "}"                            { return symbol(RBRACE); }
   "["                            { return symbol(LBRACK); }
   "]"                            { return symbol(RBRACK); }
-  ";"                            { return symbol(SEMICOLON); }
+  ";"                            { return symbol(SEMI); }
   ","                            { return symbol(COMMA); }
+  ":"                            { return symbol(COLON); }
   "."                            { return symbol(DOT); }
 
   /* operators */
   ":="                           { return symbol(EQ); }
+  "->"                           { return symbol(RARROW); }
   ">"                            { return symbol(GT); }
   "<"                            { return symbol(LT); }
   "!"                            { return symbol(NOT); }
   "&&"                           { return symbol(ANDAND); }
   "||"                           { return symbol(OROR); }
-  ":"                            { return symbol(COLON); }
+  "::"                           { return symbol(CONS); }
   "=="                           { return symbol(EQEQ); }
   "<="                           { return symbol(LTEQ); }
   ">="                           { return symbol(GTEQ); }
@@ -125,7 +134,7 @@ FloatLiteral = {IntegerLiteral} "." {IntegerPart}
   "^"                            { return symbol(EXP); }
   "&"                            { return symbol(AND); }
   "|"                            { return symbol(OR); }
-  "\"                            { return symbol(DIFF); }
+  \\                             { return symbol(DIFF); }
 
   /* string literal */
   \"                             { yybegin(STRING); string.setLength(0); }
@@ -135,7 +144,7 @@ FloatLiteral = {IntegerLiteral} "." {IntegerPart}
 
   /* numeric literals */
   {IntegerLiteral}               { return symbol(INTEGER_LITERAL, new Integer(yytext())); }
-  {RationalLiteral}              { return symbol(FLOAT_LITERAL, new rational(yytext())); }
+  {RationalLiteral}              { return symbol(FLOAT_LITERAL, parseRational(yytext())); }
   {FloatLiteral}                 { return symbol(FLOAT_LITERAL, new Float(yytext())); }
 
   /* identifiers */ 
@@ -148,7 +157,7 @@ FloatLiteral = {IntegerLiteral} "." {IntegerPart}
   {WhiteSpace}                   { /* ignore */ }
 }
 
-<STRING> {
+<STRINGLITERAL> {
   \"                             { yybegin(YYINITIAL); 
   																 return symbol(STRING_LITERAL, string.toString()); }
 
@@ -165,8 +174,8 @@ FloatLiteral = {IntegerLiteral} "." {IntegerPart}
   "\\\\"                         { string.append( '\\' ); }
 
   /* error cases */
-  \\.                            { throw new RuntimeException("Illegal escape sequence \""+yytext()+"\""); }
-  {LineTerminator}               { throw new RuntimeException("Unterminated string at end of line"); }
+  \\.                            { error() }
+  {LineTerminator}               { error() }
 }
 
 <CHARLITERAL> {
@@ -183,32 +192,11 @@ FloatLiteral = {IntegerLiteral} "." {IntegerPart}
   "\\\\"\'                       { yybegin(YYINITIAL); return symbol(CHARACTER_LITERAL, '\\'); }
   
   /* error cases */
-  \\.                            { throw new RuntimeException("Illegal escape sequence \""+yytext()+"\""); }
-  {LineTerminator}               { throw new RuntimeException("Unterminated character literal at end of line"); }
-}
-
-<CONTAINER> {
-	/* types */
-	"bool"												 { return symbol(BOOLEAN); }
-	"function"										 { return symbol(FUNCTION); }
-	"thread"										   { return symbol(THREAD); }
-	"dict"										     { return symbol(DICT); }
-	"set"										       { return symbol(SET); }
-	"seq"										       { return symbol(SEQ); }
-	"int"										       { return symbol(INT); }
-	"char"										     { return symbol(CHAR); }
-	"top"										       { return symbol(TOP); }
-	"rat"										       { return symbol(RAT); }
-	"float"										     { return symbol(FLOAT); }
-
-	/* seperators */
-	"<"										         { return symbol(LANGLBRACK); }
-	">"										         { yybegin(YYINITIAL); return symbol(RANGLBRACK); }
-	","									    	     { return symbol(COMMA); }
+  \\.                            { error() }
+  {LineTerminator}               { error() }
 }
 
 /* error fallback */
-[^]                              { throw new Error("Illegal character <"+
-                                                    yytext()+">"); }
+[^]                              { error() }
 
 <<EOF>>                          { return symbol(EOF); }

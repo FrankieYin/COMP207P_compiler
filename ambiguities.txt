@@ -1,1 +1,86 @@
+Paragraph: 4
+Problem: The set of "letters" that may present in the identifiers is not specified.
+Solution: The lexer conforms to Java identifier specification, which accepts anything that's accepted by isJavaIdentifierPart().
+
+Paragraph: 10
+Problem: The spec does not specify how to deal with strings that span across multiple lines, e.g
+"this is a string
+that spans across two lines".
+Solution: The scanner does not accept non-terminating string literals.
+
+Paragraph: 21, 22
+Problem: Two different assignment operators definition are used, namely "=" and ":=".
+Solution: The scanner uses the later.
+
+Paragraph: 5
+Problem: "thread" and "function" are special types which the spec does not specify how to deal with in container classes.
+Solution: They are accepted as type parameters in the container classes.
+
+Paragraph: 17
+Problem: It's not clear how to deal with lambda expressions that span across multiple lines.
+Solution: 
+- When the body of a lambda expression is a single expression, both the "return" keyword and braces "{}" can be omitted;
+- When the body of a lambda expression is a block statement, the braces "{}" is required;
+- Moreover, the body of a lambda expression may be empty, i.e. {}.
+
+Paragraph: 15
+Problem: Field or variable declaration in the examples are always followed by immediate initialisation.
+Solution: The parser allows separate declaration and initialisation; however repeated declaration is not checked.
+E.g 
+>>>
+int a; // this is allowed
+int b = 0; // also allowed
+...
+int a = 1; // redeclaration is not checked
+>>>
+
+Paragraph: 15
+Problem: The spec does not specify whether a multiple declaration can happen under a single type.
+Solution: The parser accepts the following declaration and initialisation style (C style):
+>>>
+int a;
+int a, b, c;
+int a=0, b=1, c;
+Person p = "Zhijun", "Yin", 19; // struct variable declaration and initialisation
+thread a, b; // this however is not allowed
+>>>
+
+Paragraph: 16
+Problem: It is unclear whether "thread" can be a parameter type or not.
+Solution: Since the examples involving threads in the spec suggest that the thread will automatically start on definition (declaration and initiation), I do not allow "thread" to be passed as a parameter to functions.
+
+Paragraph: 15
+Problem and Solution: This parser does not allow empty data type declaration list.
+e.g.
+>>>
+tdef person {}; // not acceptable
+>>>
+
+Paragraph: 16
+Problem and solution: Functions with empty body is allowed.
+
+Paragraph: 24
+Problem and solution: The body of a thread may be empty.
+
+Paragraph: 17
+Problem and solution: In lambda expressions, empty parameter lists are allowed.
+
+Paragraph: Table 4
+Problem and solution: When assigning variables, multiple assignment is allowed.
+E.g.
+>>>
+a = b = c = 1;
+>>>
+
+Paragraph: 22
+Problem and solution: print statement may have empty clause, i.e.
+>>>
+print;
+>>>
+is allowed.
+
+
+
+
+
 
