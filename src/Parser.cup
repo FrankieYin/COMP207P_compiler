@@ -2,10 +2,6 @@
 
 import java_cup.runtime.*;
 
-/* Preliminaries to set up and use the scanner.  */
-init with {: scanner.init();              :};
-scan with {: return scanner.next_token(); :};
-
 parser code {:
 	public boolean syntaxErrors = false;
 
@@ -72,12 +68,12 @@ non terminal function_header, function_body, function_declarator;
 non terminal formal_parameter_list_opt, formal_parameter_list;
 non terminal formal_parameter;
 non terminal lambda_function_declaration, lambda_expression;
-non terminal lambda_parameters;
+non terminal lambda_parameters, lambda_header;
 non terminal block;
 non terminal block_statements_opt, block_statements;
-non terminal block_statement, statement;
+non terminal block_statement, statement, statement_no_short_if;
 non terminal statement_without_trailing_substatement;
-non terminal if_statement;
+non terminal if_statement, if_else_statement, if_else_statement_no_short_if;
 non terminal empty_statement, expression_statement, break_statement;
 non terminal return_statement, print_statement, read_statement;
 non terminal statement_expression;
@@ -91,6 +87,7 @@ non terminal elif_statements_opt;
 non terminal elif_statements, elif_statement;
 non terminal else_statement_opt, else_statement;
 non terminal while_statement, forall_statement;
+non terminal while_statement_no_short_if, forall_statement_no_short_if;
 non terminal primary;
 non terminal field_access, function_call;
 non terminal argument_list_opt, argument_list;
@@ -105,26 +102,27 @@ non terminal assignment_expression;
 non terminal left_hand_side;
 non terminal expression, expression_opt;
 
+non terminal statements, statements_with_break, statement_with_break, if_statement_with_break, elif_statements_with_break_opt, elif_statements_with_break, elif_statement_with_break, else_statement_with_break_opt, block_with_break, identifier, accessor, relational_comparator, numeric_operator, sub_type, expressions, lambda_headers;
+
 /* Precedences */
-precedence left EQ;
+precedence left OROR, PLUS, MINUS;
+precedence left ANDAND, MULT, DIV, DIFF, OR, AND;
+precedence left CONS;
+precedence right IN, EXP;
+precedence nonassoc NOT, LT, LTEQ, GT, GTEQ, EQ, NOTEQ, EQEQ;
 precedence nonassoc RARROW;
-precedence left OROR;
-precedence left ANDAND;
-precedence left EQEQ, NOTEQ;
-precedence nonassoc LT, GT, LTEQ, GTEQ, IN;
-precedence right CONS;
-precedence left AND, OR, DIFF;
-precedence left PLUS, MINUS;
-precedence left MULT, DIV;
-precedence right EXP;
-precedence right NOT, UMINUS, UPLUS;
-precedence left DOT;
 
 /* The grammar */
 start with goal;
 
 goal ::=
 		compilation_unit
+	;
+compilation_unit ::=
+		type_declaration_opt main
+	;
+main ::=
+		MAIN LBRACE block RBRACE SEMI
 	;
 
 /* literals */
@@ -133,27 +131,18 @@ literal ::=
 	| FLOAT_LITERAL
 	| BOOLEAN_LITERAL
 	| CHARACTER_LITERAL
-	| STRING_LITERAL
 	;
 
 /* types */
 type ::=
 		primitive_type
 	| container_type
-	| STRING | TOP | THREAD | FUNCTION
+	| STRING | THREAD | FUNCTION
 	| IDENTIFIER // user defined types
 	;
-variable_type ::=
-		primitive_type
-	| container_type
-	| STRING | TOP | FUNCTION
-	| IDENTIFIER
-	;
-set_type ::=
-		primitive_type
-	| container_type
-  | STRING | THREAD | FUNCTION
-	| IDENTIFIER // user defined types
+sub_type ::=
+		type
+	| TOP
 	;
 primitive_type ::=
 		BOOLEAN
@@ -172,60 +161,51 @@ floating_point_type ::=
   | FLOAT
   ;
 container_type ::=
-		SET LT set_type GT
-	| SEQ LT type GT
-	| DICT LT type COMMA type GT
+		SET LT type GT
+	| SEQ LT sub_type GT
+	| DICT LT sub_type COMMA sub_type GT
 	;
 
-/* names of variables */
-name ::=
-		normal_name
-	| qualified_name
+/* identifiers */
+identifier ::= 
+		accessor DOT identifier
+	| accessor
 	;
-normal_name ::=
+accessor ::=
 		IDENTIFIER
-	;
-qualified_name ::=
-		name DOT IDENTIFIER
+	| IDENTIFIER LBRACK expression RBRACK
+	| IDENTIFIER LBRACK expression_opt COLON expression_opt RBRACK
+	| IDENTIFIER LBRACK expression RBRACK LBRACK expression_opt COLON expression_opt RBRACK
+	| IDENTIFIER LBRACK expression RBRACK LBRACK expression RBRACK
+	| function_call
+	| function_call LBRACK expression RBRACK
+	| function_call LBRACK expression_opt COLON expression_opt RBRACK
 	;
 
-compilation_unit ::=
-		type_declaration_opt main
-	;
+
 type_declaration_opt ::=
 	| type_declarations
 	;
-type_declarations ::=
+type_declarations ::= 
 		type_declaration
 	| type_declarations type_declaration
 	;
 type_declaration ::=
-		variable_declaration
-	| thread_declaration
+		variable_declarator SEMI
+	| variable_declarator EQ expressions SEMI
 	| data_type_declaration
 	| type_aliasing
 	| function_declaration
+	| thread_declaration
 	;
 
 /* variable declarations */
-variable_declaration ::=
-		variable_type variable_declarators SEMI
-	;
-variable_declarators ::=
-		variable_declarator
-	| variable_declarators COMMA variable_declarator
-	;
 variable_declarator ::=
-		IDENTIFIER
-	| IDENTIFIER EQ variable_initialiser
+		type IDENTIFIER
 	;
 variable_initialisers ::=
-		variable_initialiser
-	| variable_initialisers COMMA variable_initialiser
-	;
-variable_initialiser ::=
 		expression
-	| container_initialiser
+	| variable_initialisers COMMA expression
 	;
 container_initialiser ::=
 		set_initialiser
@@ -239,6 +219,7 @@ set_initialiser ::=
 seq_initialiser ::=
 		LBRACK variable_initialisers RBRACK
 	| LBRACK RBRACK
+	| STRING_LITERAL
 	;
 dict_initialiser ::=
 		LPAREN key_value_pairs RPAREN
@@ -249,7 +230,7 @@ key_value_pairs ::=
 	| key_value_pairs COMMA key_value_pair
 	;
 key_value_pair ::=
-		variable_initialiser COLON variable_initialiser
+		expression COLON expression
 	;
 
 /* thread declarations */
@@ -257,7 +238,7 @@ thread_declaration ::=
 		THREAD thread_declarator SEMI
 	;
 thread_declarator ::=
-		IDENTIFIER EQ block
+		IDENTIFIER EQ LBRACE block RBRACE
 	;
 
 /* data type declarations */
@@ -267,16 +248,12 @@ data_type_declaration ::=
 
 /* type aliasing */
 type_aliasing ::=
-		ALIAS type IDENTIFIER SEMI
+		ALIAS type type SEMI
 	;
 
 /* function declarations */
 function_declaration ::=
-		normal_function_declaration
-	| lambda_function_declaration
-	;
-normal_function_declaration ::=
-		function_header function_body SEMI
+		function_header LBRACE block RBRACE SEMI
 	;
 function_header ::=
 		FDEF type function_declarator
@@ -289,110 +266,65 @@ formal_parameter_list_opt ::=
 	| formal_parameter_list
 	;
 formal_parameter_list ::=
-		formal_parameter
-	| formal_parameter_list COMMA formal_parameter
-	;
-formal_parameter ::=
-		variable_type IDENTIFIER
-	;
-function_body ::=
-		block
-	;
-lambda_function_declaration ::=
-		FUNCTION IDENTIFIER EQ lambda_expression SEMI
+		variable_declarator
+	| formal_parameter_list COMMA variable_declarator
 	;
 lambda_expression ::=
-		OR lambda_parameters OR RARROW function_body
-	| OR lambda_parameters OR RARROW expression
+		lambda_headers LBRACE return_statement RBRACE
+	| lambda_headers expression
 	;
-lambda_parameters ::=
-	|	IDENTIFIER
-	| lambda_parameters COMMA IDENTIFIER
+lambda_headers ::=
+		lambda_header
+	| lambda_headers lambda_header
 	;
-main ::=
-		MAIN function_body SEMI
+lambda_header ::=
+		OR expression OR RARROW
 	;
 
 /* blocks and statements */
 block ::=
-		LBRACE block_statements_opt RBRACE
+		type_declaration_opt statements
 	;
-block_statements_opt ::=
-	| block_statements
+block_with_break ::=
+		type_declaration_opt statements_with_break
 	;
-block_statements ::=
-		block_statement
-	| block_statements block_statement
-	;
-block_statement ::=
+statements ::=
 		statement
-	| type_declaration
+	| statements statement
+	;
+statements_with_break ::=
+		statement_with_break
+	| statements_with_break statement_with_break
 	;
 statement ::=
-		statement_without_trailing_substatement
-	| if_statement
+		if_statement
 	| while_statement
 	| forall_statement
+	| assignment
+	| read_statement
+	| print_statement
+	| return_statement
+	| function_call SEMI
 	;
-statement_without_trailing_substatement ::=
-		block
-	| empty_statement
+statement_with_break ::=
+		if_statement_with_break
+	| while_statement
+	| read_statement
+	| print_statement
+	| return_statement
 	| expression_statement
 	| break_statement
-	| return_statement
-	| print_statement
-	| read_statement
 	;
-empty_statement ::=
-		SEMI
+assignment ::=
+		identifier EQ expressions SEMI
 	;
-expression_statement ::=
-		statement_expression SEMI
-	;
-statement_expression ::= // the expressions that will become a statement by appending SEMI
-		assignment
-	| function_call
-	| cons_expression
-	;
-
 if_statement ::=
-		IF LPAREN expression RPAREN THEN if_body FI
+		IF LPAREN expression RPAREN THEN block
+			elif_statements_opt
+			else_statement_opt
+		FI
 	;
-if_body ::=
-		statement_no_brace
-		elif_statements_opt
-		else_statement_opt
-	;
-statement_no_brace ::=
-		statement_no_brace_without_trailing_substatement
-	| if_statement
-	| while_statement
-	| forall_statement
-	;
-statement_no_brace_without_trailing_substatement ::=
-		block_no_brace
-	| empty_statement
-	| expression_statement
-	| break_statement
-	| return_statement
-	| print_statement
-	| read_statement
-	;
-block_no_brace ::=
-		block_statements_no_brace_opt
-	;
-block_statements_no_brace_opt ::=
-	|	block_statements_no_brace
-	;
-block_statements_no_brace ::=
-		block_statement_no_brace
-	| block_statements_no_brace block_statement_no_brace
-	;
-block_statement_no_brace ::=
-		statement_no_brace
-	| type_declaration
-	;
-elif_statements_opt ::=
+elif_statements_opt ::= 
 	| elif_statements
 	;
 elif_statements ::=
@@ -400,23 +332,40 @@ elif_statements ::=
 	| elif_statements elif_statement
 	;
 elif_statement ::=
-		ELIF LPAREN expression RPAREN THEN if_body
+		ELIF LPAREN expression RPAREN THEN block
 	;
 else_statement_opt ::=
-	|	else_statement
+	|	ELSE block
 	;
-else_statement ::=
-		ELSE if_body
+if_statement_with_break ::=
+		IF LPAREN expression RPAREN THEN block_with_break
+			elif_statements_with_break_opt
+			else_statement_with_break_opt
+		FI
+	;
+elif_statements_with_break_opt ::=
+		| elif_statement_with_break
+		;
+elif_statements_with_break ::=
+		elif_statement_with_break
+	| elif_statements_with_break elif_statement_with_break
+	;
+elif_statement_with_break ::=
+		ELIF LPAREN expression RPAREN THEN block_with_break
+	;
+else_statement_with_break_opt ::=
+	| ELSE block_with_break
 	;
 
 while_statement ::=
-		WHILE LPAREN expression RPAREN DO statement_no_brace OD
+		WHILE LPAREN expression RPAREN DO block_with_break OD
 	;
 forall_statement ::=
-		FORALL LPAREN in_expression RPAREN DO statement_no_brace OD
+		FORALL LPAREN expression IN expression RPAREN DO block OD
 	;
 break_statement ::=
-		BREAK expression_opt SEMI
+		BREAK SEMI
+	|	BREAK INTEGER_LITERAL SEMI
 	;
 return_statement ::=
 		RETURN expression_opt SEMI
@@ -425,109 +374,65 @@ print_statement ::=
 		PRINT expression_opt SEMI
 	;
 read_statement ::=
-		READ name SEMI
+		READ identifier SEMI
 	;
 
-/* expressions */
-primary ::=
-		literal
-	|	LPAREN expression RPAREN
-	| field_access
-	| function_call
-	| container_access
-	;
-field_access ::=
-		primary DOT IDENTIFIER
-	| name DOT IDENTIFIER
-	;
-function_call ::=
-		name LPAREN argument_list_opt RPAREN
-	| primary DOT IDENTIFIER LPAREN argument_list_opt RPAREN
+function_call	::=
+		IDENTIFIER LPAREN argument_list_opt RPAREN
 	;
 argument_list_opt ::=
-	| argument_list
+	|	argument_list
 	;
 argument_list ::=
 		expression
 	| argument_list COMMA expression
 	;
-container_access ::=
-		name LBRACK expression RBRACK
-	| primary LBRACK expression RBRACK
-	;
-unary_expression ::=
-		PLUS unary_expression %prec UPLUS
-	| MINUS unary_expression %prec UMINUS
-	| unary_expression_not_plus_minus
-	;
-unary_expression_not_plus_minus ::=
-		primary
-	| name
-	| NOT unary_expression
-	;
-exponetial_expression ::=
-		unary_expression
-	| exponetial_expression EXP unary_expression
-	;
-multiplicative_expression ::=
-		exponetial_expression
-	| multiplicative_expression MULT exponetial_expression
-	| multiplicative_expression DIV exponetial_expression
-	;
-additive_expression ::=
-		multiplicative_expression
-	| additive_expression PLUS multiplicative_expression
-	| additive_expression MINUS multiplicative_expression
-	;
-set_expression ::=
-		additive_expression
-	| set_expression AND additive_expression
-	| set_expression OR additive_expression
-	| set_expression DIFF additive_expression
-	;
-cons_expression ::=
-		set_expression
-	| cons_expression CONS set_expression
-	;
-relational_expression ::=
-		cons_expression
-	| relational_expression LT cons_expression
-	| relational_expression GT cons_expression
-	| relational_expression LTEQ cons_expression
-	| relational_expression GTEQ cons_expression
-	| relational_expression IN cons_expression
-	;
-in_expression ::=
-		relational_expression IN cons_expression
-	;
-equality_expression ::=
-		relational_expression
-	| equality_expression EQEQ relational_expression
-	| equality_expression NOTEQ relational_expression
-	;
-conditional_and_expression ::=
-		equality_expression
-	| conditional_and_expression ANDAND equality_expression
-	;
-conditional_or_expression ::=
-		conditional_and_expression
-	| conditional_or_expression OROR conditional_and_expression
-	;
-assignment_expression ::=
-		conditional_or_expression
-	| assignment
-	;
-assignment ::=
-		left_hand_side EQ assignment_expression
-	;
-left_hand_side ::=
-		name
-	| field_access
-	| container_access
-	;
-expression_opt ::=
+
+/* expressions */
+expression_opt ::= 
 	| expression
 	;
-expression ::=
-		assignment_expression
+expressions ::= 
+		expression
+	| expressions COMMA expression
 	;
+expression ::=
+		expression numeric_operator expression
+	| expression relational_comparator expression
+	| expression CONS expression
+	| expression IN expression
+	| NOT expression
+	| LPAREN expression RPAREN
+	| container_initialiser
+	| lambda_expression
+	| literal
+	| MINUS expression
+	| identifier
+	| EQEQ
+	;
+numeric_operator ::=
+		PLUS | MINUS 
+	| MULT | DIV 
+	| EXP
+	;
+relational_comparator ::=
+		OROR | ANDAND
+	| LT | GT | LTEQ | GTEQ | NOTEQ | EQEQ
+	| AND | OR | DIFF
+	| EQ
+	;
+
+/*
+assignment ::= EQ;
+function_call ::= LPAREN RPAREN;
+cons_expression ::= literal CONS name;
+in_expression ::= name IN name;
+statement_no_brace ::= statement;
+expression ::= name;
+*/
+
+
+
+
+
+
