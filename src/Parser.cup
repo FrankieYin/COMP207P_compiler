@@ -13,7 +13,7 @@ parser code {:
 		report_error(
     	"Syntax error at line " + (current_token.left+1) + ", column "
 				+ current_token.right, null);
-		//syntaxErrors = true;
+		syntaxErrors = true;
 	}
 :};
 

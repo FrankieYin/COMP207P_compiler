@@ -5,34 +5,28 @@ import java_cup.runtime.*;
 %class Lexer
 %unicode
 %cup
-%implements sym
 %line
 %column
+
+
+%eofval{
+  return symbol(sym.EOF);
+%eofval}
 
 %{
   StringBuffer string = new StringBuffer();
 
   private Symbol symbol(int type) {
-    return new Symbol(type, yyline+1, yycolumn+1);
+    return new Symbol(type, yyline, yycolumn);
   }
 
   private Symbol symbol(int type, Object value) {
-    return new Symbol(type, yyline+1, yycolumn+1, value);
-  }
-
-  private Double parseRational(String rstr){
-  	int pos = rstr.indexOf('_');
-  	Integer wholeNum = new Integer(rstr.substring(0, pos));
-  	int op = rstr.indexOf('/');
-  	Integer numerator = new Integer(rstr.substring(pos+1, op));
-  	Integer denominator = new Integer(rstr.substring(op+1, rstr.length()));
-  	return (Double) (wholeNum + numrator/denominator);
+    return new Symbol(type, yyline, yycolumn, value);
   }
 
 	private void error(){
-		report_error(
-    	"Syntax error at line " + (yyline+1) + ", column "
-				+ (yycolumn+1), null);
+		throw new Error("Syntax error at line " + (yyline+1) + ", column "
+				+ yycolumn);
 	}
 %}
 
@@ -67,88 +61,88 @@ FloatLiteral = {IntegerLiteral} "." {IntegerPart}
 
 <YYINITIAL> {
 	/* keywords */
-	"bool"												 { return symbol(BOOLEAN); }
-	"function"										 { return symbol(FUNCTION); }
-	"thread"										   { return symbol(THREAD); }
-	"dict"										     { return symbol(DICT); }
-	"set"										       { return symbol(SET); }
-	"seq"										       { return symbol(SEQ); }
-	"int"										       { return symbol(INT); }
-	"char"										     { return symbol(CHAR); }
-	"string"										   { return symbol(STRING); }
-	"top"										       { return symbol(TOP); }
-	"rat"										       { return symbol(RAT); }
-	"float"										     { return symbol(FLOAT); }
-	"in"										       { return symbol(IN); }
-	"tdef"										     { return symbol(TDEF); }
-	"fdef"										     { return symbol(FDEF); }
-	"alias"										     { return symbol(ALIAS); }
-	"return"										   { return symbol(RETURN); }
-	"if"										       { return symbol(IF); }
-	"fi"										       { return symbol(FI); }
-	"do"										       { return symbol(DO); }
-	"od"										       { return symbol(OD); }
-	"then"										     { return symbol(THEN); }
-	"elif"										     { return symbol(ELIF); }
-	"else"										     { return symbol(ELSE); }
-	"while"										     { return symbol(WHILE); }
-	"break"										     { return symbol(BREAK); }
-	"forall"									     { return symbol(FORALL); }
-	"print"										     { return symbol(PRINT); }
-	"read"										     { return symbol(READ); }
-	"main"										     { return symbol(MAIN); }
+	"bool"												 { return symbol(sym.BOOLEAN); }
+	"function"										 { return symbol(sym.FUNCTION); }
+	"thread"										   { return symbol(sym.THREAD); }
+	"dict"										     { return symbol(sym.DICT); }
+	"set"										       { return symbol(sym.SET); }
+	"seq"										       { return symbol(sym.SEQ); }
+	"int"										       { return symbol(sym.INT); }
+	"char"										     { return symbol(sym.CHAR); }
+	"string"										   { return symbol(sym.STRING); }
+	"top"										       { return symbol(sym.TOP); }
+	"rat"										       { return symbol(sym.RAT); }
+	"float"										     { return symbol(sym.FLOAT); }
+	"in"										       { return symbol(sym.IN); }
+	"tdef"										     { return symbol(sym.TDEF); }
+	"fdef"										     { return symbol(sym.FDEF); }
+	"alias"										     { return symbol(sym.ALIAS); }
+	"return"										   { return symbol(sym.RETURN); }
+	"if"										       { return symbol(sym.IF); }
+	"fi"										       { return symbol(sym.FI); }
+	"do"										       { return symbol(sym.DO); }
+	"od"										       { return symbol(sym.OD); }
+	"then"										     { return symbol(sym.THEN); }
+	"elif"										     { return symbol(sym.ELIF); }
+	"else"										     { return symbol(sym.ELSE); }
+	"while"										     { return symbol(sym.WHILE); }
+	"break"										     { return symbol(sym.BREAK); }
+	"forall"									     { return symbol(sym.FORALL); }
+	"print"										     { return symbol(sym.PRINT); }
+	"read"										     { return symbol(sym.READ); }
+	"main"										     { return symbol(sym.MAIN); }
 
 	/* boolean literals */
-	"T"										         { return symbol(BOOLEAN_LITERAL, true); }
-	"F"										         { return symbol(BOOLEAN_LITERAL, false); }
+	"T"										         { return symbol(sym.BOOLEAN_LITERAL, true); }
+	"F"										         { return symbol(sym.BOOLEAN_LITERAL, false); }
 
 	/* separators */
-	"("                            { return symbol(LPAREN); }
-  ")"                            { return symbol(RPAREN); }
-  "{"                            { return symbol(LBRACE); }
-  "}"                            { return symbol(RBRACE); }
-  "["                            { return symbol(LBRACK); }
-  "]"                            { return symbol(RBRACK); }
-  ";"                            { return symbol(SEMI); }
-  ","                            { return symbol(COMMA); }
-  ":"                            { return symbol(COLON); }
-  "."                            { return symbol(DOT); }
+	"("                            { return symbol(sym.LPAREN); }
+  ")"                            { return symbol(sym.RPAREN); }
+  "{"                            { return symbol(sym.LBRACE); }
+  "}"                            { return symbol(sym.RBRACE); }
+  "["                            { return symbol(sym.LBRACK); }
+  "]"                            { return symbol(sym.RBRACK); }
+  ";"                            { return symbol(sym.SEMI); }
+  ","                            { return symbol(sym.COMMA); }
+  ":"                            { return symbol(sym.COLON); }
+  "."                            { return symbol(sym.DOT); }
 
   /* operators */
-  ":="                           { return symbol(EQ); }
-  "->"                           { return symbol(RARROW); }
-  ">"                            { return symbol(GT); }
-  "<"                            { return symbol(LT); }
-  "!"                            { return symbol(NOT); }
-  "&&"                           { return symbol(ANDAND); }
-  "||"                           { return symbol(OROR); }
-  "::"                           { return symbol(CONS); }
-  "=="                           { return symbol(EQEQ); }
-  "<="                           { return symbol(LTEQ); }
-  ">="                           { return symbol(GTEQ); }
-  "!="                           { return symbol(NOTEQ); }
-  "+"                            { return symbol(PLUS); }
-  "-"                            { return symbol(MINUS); }
-  "*"                            { return symbol(MULT); }
-  "/"                            { return symbol(DIV); }
-  "^"                            { return symbol(EXP); }
-  "&"                            { return symbol(AND); }
-  "|"                            { return symbol(OR); }
-  \\                             { return symbol(DIFF); }
+  ":="                           { return symbol(sym.EQ); }
+  "->"                           { return symbol(sym.RARROW); }
+  ">"                            { return symbol(sym.GT); }
+  "<"                            { return symbol(sym.LT); }
+  "!"                            { return symbol(sym.NOT); }
+  "&&"                           { return symbol(sym.ANDAND); }
+  "||"                           { return symbol(sym.OROR); }
+  "::"                           { return symbol(sym.CONS); }
+  "=="                           { return symbol(sym.EQEQ); }
+  "<="                           { return symbol(sym.LTEQ); }
+  ">="                           { return symbol(sym.GTEQ); }
+  "!="                           { return symbol(sym.NOTEQ); }
+  "+"                            { return symbol(sym.PLUS); }
+  "-"                            { return symbol(sym.MINUS); }
+  "*"                            { return symbol(sym.MULT); }
+  "/"                            { return symbol(sym.DIV); }
+  "^"                            { return symbol(sym.EXP); }
+  "&"                            { return symbol(sym.AND); }
+  "|"                            { return symbol(sym.OR); }
+  \\                             { return symbol(sym.DIFF); }
 
   /* string literal */
-  \"                             { yybegin(STRING); string.setLength(0); }
+  \"                             { yybegin(STRINGLITERAL); string.setLength(0); }
 
   /* character literal */
   \'                             { yybegin(CHARLITERAL); }
 
   /* numeric literals */
-  {IntegerLiteral}               { return symbol(INTEGER_LITERAL, new Integer(yytext())); }
-  {RationalLiteral}              { return symbol(FLOAT_LITERAL, parseRational(yytext())); }
-  {FloatLiteral}                 { return symbol(FLOAT_LITERAL, new Float(yytext())); }
+  {IntegerLiteral}               { return symbol(sym.INTEGER_LITERAL, new Integer(yytext())); }
+  {RationalLiteral}              { return symbol(sym.FLOAT_LITERAL, yytext()); }
+  {FloatLiteral}                 { return symbol(sym.FLOAT_LITERAL, new Float(yytext())); }
 
   /* identifiers */ 
-  {Identifier}                   { return symbol(IDENTIFIER, yytext()); }
+  {Identifier}                   { return symbol(sym.IDENTIFIER, yytext()); }
 
   /* comments */
   {Comment}                      { /* ignore */ }
@@ -159,7 +153,7 @@ FloatLiteral = {IntegerLiteral} "." {IntegerPart}
 
 <STRINGLITERAL> {
   \"                             { yybegin(YYINITIAL); 
-  																 return symbol(STRING_LITERAL, string.toString()); }
+  																 return symbol(sym.STRING_LITERAL, string.toString()); }
 
   {StringCharacter}+             { string.append( yytext() ); }
 
@@ -174,29 +168,27 @@ FloatLiteral = {IntegerLiteral} "." {IntegerPart}
   "\\\\"                         { string.append( '\\' ); }
 
   /* error cases */
-  \\.                            { error() }
-  {LineTerminator}               { error() }
+  \\.                            { error(); }
+  {LineTerminator}               { error(); }
 }
 
 <CHARLITERAL> {
-  {SingleCharacter}\'            { yybegin(YYINITIAL); return symbol(CHARACTER_LITERAL, yytext().charAt(0)); }
+  {SingleCharacter}\'            { yybegin(YYINITIAL); return symbol(sym.CHARACTER_LITERAL, yytext().charAt(0)); }
   
   /* escape sequences */
-  "\\b"\'                        { yybegin(YYINITIAL); return symbol(CHARACTER_LITERAL, '\b');}
-  "\\t"\'                        { yybegin(YYINITIAL); return symbol(CHARACTER_LITERAL, '\t');}
-  "\\n"\'                        { yybegin(YYINITIAL); return symbol(CHARACTER_LITERAL, '\n');}
-  "\\f"\'                        { yybegin(YYINITIAL); return symbol(CHARACTER_LITERAL, '\f');}
-  "\\r"\'                        { yybegin(YYINITIAL); return symbol(CHARACTER_LITERAL, '\r');}
-  "\\\""\'                       { yybegin(YYINITIAL); return symbol(CHARACTER_LITERAL, '\"');}
-  "\\'"\'                        { yybegin(YYINITIAL); return symbol(CHARACTER_LITERAL, '\'');}
-  "\\\\"\'                       { yybegin(YYINITIAL); return symbol(CHARACTER_LITERAL, '\\'); }
+  "\\b"\'                        { yybegin(YYINITIAL); return symbol(sym.CHARACTER_LITERAL, '\b');}
+  "\\t"\'                        { yybegin(YYINITIAL); return symbol(sym.CHARACTER_LITERAL, '\t');}
+  "\\n"\'                        { yybegin(YYINITIAL); return symbol(sym.CHARACTER_LITERAL, '\n');}
+  "\\f"\'                        { yybegin(YYINITIAL); return symbol(sym.CHARACTER_LITERAL, '\f');}
+  "\\r"\'                        { yybegin(YYINITIAL); return symbol(sym.CHARACTER_LITERAL, '\r');}
+  "\\\""\'                       { yybegin(YYINITIAL); return symbol(sym.CHARACTER_LITERAL, '\"');}
+  "\\'"\'                        { yybegin(YYINITIAL); return symbol(sym.CHARACTER_LITERAL, '\'');}
+  "\\\\"\'                       { yybegin(YYINITIAL); return symbol(sym.CHARACTER_LITERAL, '\\'); }
   
   /* error cases */
-  \\.                            { error() }
-  {LineTerminator}               { error() }
+  \\.                            { error(); }
+  {LineTerminator}               { error(); }
 }
 
 /* error fallback */
-[^]                              { error() }
-
-<<EOF>>                          { return symbol(EOF); }
+[^]                              { error(); }
