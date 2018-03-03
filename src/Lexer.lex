@@ -92,9 +92,6 @@ SingleCharacter = [^\r\n\'\\]
   "alias"                        { return symbol(sym.ALIAS); }
   "in"                           { return symbol(sym.IN); }
 
-  "wait"                         { return symbol(sym.WAIT); }
-  "len"                          { return symbol(sym.LEN); }
-
   /* separators */
   "("                            { return symbol(sym.LPAREN); }
   ")"                            { return symbol(sym.RPAREN); }

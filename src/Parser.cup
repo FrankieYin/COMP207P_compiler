@@ -23,7 +23,6 @@ terminal IF, FI, THEN, ELSE, ELIF;
 terminal WHILE, FORALL, DO, OD, BREAK, RETURN;
 terminal TDEF, FDEF, PRINT, READ;
 terminal MAIN, ALIAS, IN;
-terminal WAIT, LEN;
 terminal LPAREN, RPAREN, LBRACK, RBRACK, LBRACE, RBRACE, SEMI, DOT, COMMA;
 terminal NOT, AND, OR, EQEQ, NOTEQ, COLON, CONS;
 terminal PLUS, MINUS, MULT, DIV, EXP, UMINUS;
@@ -45,11 +44,10 @@ non terminal expressions_opt, expressions, expression_opt, expression, statement
 non terminal literals;
 non terminal operator, conditional_operator, numeric_operator, relational_operator, set_operator;
 non terminal lambda_expression, lambda_header, argument_list;
-non terminal block_only_statements, block_part_only_statements;
-non terminal block, block_statement, main_block, statements, block_part, block_part_main, block_while, block_part_while, statement, expression_statement;
-non terminal identifier, assignment, function_call;
-non terminal if_statement, if_body, if_statement_in_while, if_body_in_while;
-non terminal while_statement, forall_statement, forall_statement_in_while;
+non terminal block, block_statement, main_block, statements, statement, expression_statement;
+non terminal identifier, function_call;
+non terminal if_statement, if_body;
+non terminal while_statement, forall_statement;
 non terminal print_statement, return_statement, read_statement, break_statement;
 
 /* precedence */
@@ -98,15 +96,15 @@ function_declaration ::=
 		function_header LPAREN formal_param_list RPAREN LBRACE block RBRACE SEMI
 	;
 function_header ::=
-		FDEF type_no_top identifier
+		FDEF type identifier
 	| FDEF identifier
 	;
 data_type_declaration ::=
-		TDEF type_no_top LBRACE formal_param_list RBRACE SEMI
+		TDEF type LBRACE formal_param_list RBRACE SEMI
 	;
 formal_param_list ::=
 	| formal_param_list COMMA formal_param_list
-	| type_no_top identifier
+	| type identifier
 	;
 variable_declaration ::=
 		variable_type identifier EQ expressions SEMI
@@ -119,7 +117,7 @@ variable_declaration ::=
 	| set_type identifier SEMI
 	;
 type_aliasing ::=
-		ALIAS type_no_top identifier SEMI
+		ALIAS type identifier SEMI
 	;
 
 /* types */
@@ -194,7 +192,6 @@ expression ::=
 	| expression operator expression
 	| identifier LBRACK expression_opt COLON expression_opt RBRACK
 	| function_call
-	| identifier DOT LEN
 	| MINUS expression %prec UMINUS
 	| NOT expression
 	| lambda_expression
@@ -273,26 +270,6 @@ block_statement ::=
 	| data_type_declaration
 	;
 
-
-block_while ::=
-		block_part_while
-	| block_while block_part_while
-	;
-block_part_while ::=
-		if_statement_in_while
-	| forall_statement_in_while
-	| while_statement
-	| print_statement
-	| return_statement
-	| read_statement
-	| expression_statement
-	| variable_declaration
-	| type_aliasing
-	| thread_declaration
-	| break_statement
-	;
-
-
 expression_statement ::=
 		statement_expression SEMI
 	;
@@ -310,8 +287,6 @@ identifier ::=
 	;
 function_call ::=
 		identifier LPAREN expressions_opt RPAREN
-	|	LEN LPAREN identifier RPAREN
-	| WAIT LPAREN IDENTIFIER RPAREN
 	;
 if_statement ::=
 		IF LPAREN expression RPAREN THEN if_body FI
@@ -321,15 +296,6 @@ if_body ::=
 	| block ELSE block
 	| block ELIF LPAREN expression RPAREN THEN if_body
 	;
-if_statement_in_while ::=
-		IF LPAREN expression RPAREN THEN if_body_in_while FI
-	;
-
-if_body_in_while ::=
-		block_while
-	| block_while ELSE block_while
-	| block_while ELIF LPAREN expression RPAREN THEN if_body_in_while
-	;
 
 while_statement ::=
 		WHILE LPAREN expression RPAREN DO block OD
@@ -337,11 +303,6 @@ while_statement ::=
 forall_statement ::=
 		FORALL LPAREN IDENTIFIER IN expression RPAREN DO block OD
 	;
-
-forall_statement_in_while ::=
-		FORALL LPAREN IDENTIFIER IN expression RPAREN DO block_while OD
-	;
-
 print_statement ::=
 		PRINT expression_opt SEMI
 	;

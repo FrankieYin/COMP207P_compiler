@@ -42,7 +42,6 @@ int a;
 int a, b, c;
 int a=0, b=1, c;
 Person p = "Zhijun", "Yin", 19; // struct variable declaration and initialisation
-thread a, b; // this however is not allowed
 >>>
 
 Paragraph: 16
@@ -62,9 +61,6 @@ Problem and solution: Functions with empty body is allowed.
 Paragraph: 24
 Problem and solution: The body of a thread may be empty.
 
-Paragraph: 17
-Problem and solution: In lambda expressions, empty parameter lists are allowed.
-
 Paragraph: Table 4
 Problem and solution: When assigning variables, multiple assignment is allowed.
 E.g.
@@ -78,6 +74,10 @@ Problem and solution: print statement may have empty clause, i.e.
 print;
 >>>
 is allowed.
+
+Paragraph: 24
+Problem: wait and len are regarded as built-in function/attributes; however they are not keywords and should not be treated differently than any other identifiers.
+Solution: My lexer ignore wait and len and simply treat them as normal identifiers.
 
 
 
