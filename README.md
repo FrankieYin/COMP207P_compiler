@@ -1,9 +1,5 @@
 # Lexer and Parser
 
-Please put your Lexer.lex and Parser.cup files into the src subdirectory.
+Rough parser specification using auto scanner gennerator Jflex and auto LALR(1) parser generator CUP.
 
-To build, issue `make`.
 
-To test, issue `make test`.
-
-To run on a single test file, issue `./bin/sc tests/open/<some test>.s`
