@@ -273,7 +273,7 @@ block_statement ::=
 	| data_type_declaration
 	;
 
-/*
+
 block_while ::=
 		block_part_while
 	| block_while block_part_while
@@ -291,7 +291,7 @@ block_part_while ::=
 	| thread_declaration
 	| break_statement
 	;
-*/
+
 
 expression_statement ::=
 		statement_expression SEMI
@@ -324,24 +324,24 @@ if_body ::=
 if_statement_in_while ::=
 		IF LPAREN expression RPAREN THEN if_body_in_while FI
 	;
-/*
+
 if_body_in_while ::=
 		block_while
 	| block_while ELSE block_while
 	| block_while ELIF LPAREN expression RPAREN THEN if_body_in_while
 	;
-*/
+
 while_statement ::=
 		WHILE LPAREN expression RPAREN DO block OD
 	;
 forall_statement ::=
 		FORALL LPAREN IDENTIFIER IN expression RPAREN DO block OD
 	;
-/*
+
 forall_statement_in_while ::=
 		FORALL LPAREN IDENTIFIER IN expression RPAREN DO block_while OD
 	;
-*/
+
 print_statement ::=
 		PRINT expression_opt SEMI
 	;
