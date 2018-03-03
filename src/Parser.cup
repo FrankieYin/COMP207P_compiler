@@ -16,10 +16,56 @@ parser code {:
 :}
 
 /* terminals */
+terminal INT, CHAR, FLOAT, RAT, BOOL;
+terminal SEQ, SET, DICT;
+terminal TOP, THREAD, FUNCTION, IDENTIFIER;
+terminal IF, FI, THEN, ELSE, ELIF;
+terminal WHILE, FORALL, DO, OD, BREAK, RETURN;
+terminal TDEF, FDEF, PRINT, READ;
+terminal MAIN, ALIAS, IN;
+terminal WAIT, LEN;
+terminal LPAREN, RPAREN, LBRACK, RBRACK, LBRACE, RBRACE, SEMI, DOT, COMMA;
+terminal NOT, AND, OR, EQEQ, NOTEQ, COLON, CONS;
+terminal PLUS, MINUS, MULT, DIV, EXP, UMINUS;
+terminal EQ, ARROW;
+terminal VBAR, DIFF, INTERSECTION;
+terminal LT, LTEQ, GT, GTEQ;
+terminal FLOAT_LITERAL, INTEGER_LITERAL, STRING_LITERAL, CHAR_LITERAL, BOOL_LITERAL, RAT_LITERAL;
 
 /* non terminals */
+non terminal goal, compilation_unit, main;
+non terminal type_declarations_opt, type_declaration, type_aliasing;
+non terminal thread_declaration, function_declaration, function_header;
+non terminal data_type_declaration, formal_param_list, variable_declaration;
+non terminal type_no_top, primitive_type, type, variable_type;
+non terminal dict_type,set_type, seq_type;
+non terminal dict_literal, dict_initialisers_opt, dict_initialiser;
+non terminal seq_literal, set_literal;
+non terminal expressions_opt, expressions, expression_opt, expression;
+non terminal literals;
+non terminal operator, conditional_operator, numeric_operator, relational_operator, set_operator;
+non terminal lambda_expression, lambda_header, argument_list;
+non terminal block_only_statements, block_part_only_statements;
+non terminal block, block_part, block_main, block_part_main, block_while, block_part_while;
+non terminal identifier, assignment, function_call;
+non terminal if_statement, if_body, if_statement_in_while, if_body_in_while;
+non terminal while_statement, forall_statement, forall_statement_in_while;
+non terminal print_statement, return_statement, read_statement, break_statement;
 
 /* precedence */
+precedence nonassoc EQEQ, NOTEQ, LT, GT, LTEQ, GTEQ;
+precedence left LBRACK;
+precedence left COMMA;
+precedence left PLUS, MINUS;
+precedence left MULT, DIV;
+precedence left EXP;
+precedence left UMINUS;
+precedence left AND, OR;
+precedence left NOT;
+precedence left VBAR, INTERSECTION, DIFF;
+precedence left IN;
+precedence left CONS;
+precedence left DOT;
 
 /* grammar */
 start with goal;
@@ -48,7 +94,7 @@ function_declaration ::=
 	;
 function_header ::=
 		FDEF type_no_top identifier
-	| FEDF identifier
+	| FDEF identifier
 	;
 data_type_declaration ::=
 		TDEF type_no_top LBRACE formal_param_list RBRACE SEMI
@@ -66,6 +112,9 @@ variable_declaration ::=
 	| seq_type identifier SEMI
 	| set_type identifier EQ expression SEMI
 	| set_type identifier SEMI
+	;
+type_aliasing ::=
+		ALIAS type_no_top identifier SEMI
 	;
 type_no_top ::=
 		primitive_type
@@ -180,11 +229,12 @@ lambda_header ::=
 		VBAR argument_list VBAR ARROW
 	;
 argument_list ::=
+		IDENTIFIER
 	| argument_list COMMA IDENTIFIER
 	;
 
 main ::=
-		MAIN LBRACE block_main RBRACE
+		MAIN LBRACE block_main RBRACE SEMI
 	;
 
 block_only_statements ::=
@@ -224,7 +274,17 @@ block_while ::=
 	| block_while block_part_while
 	;
 block_part_while ::=
-		block_part
+		if_statement_in_while
+	| forall_statement_in_while
+	| while_statement
+	| print_statement
+	| return_statement
+	| read_statement
+	| assignment
+	| function_call SEMI
+	| variable_declaration
+	| type_aliasing
+	| thread_declaration
 	| break_statement
 	;
 

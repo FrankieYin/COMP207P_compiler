@@ -79,7 +79,7 @@ SingleCharacter = [^\r\n\'\\]
   "else"                         { return symbol(sym.ELSE); }
 
   "while"                        { return symbol(sym.WHILE); }
-  "farall"                       { return symbol(sym.FORALL); }
+  "forall"                       { return symbol(sym.FORALL); }
   "do"                           { return symbol(sym.DO); }
   "od"                           { return symbol(sym.OD); }
   "break"                        { return symbol(sym.BREAK); }
@@ -107,7 +107,6 @@ SingleCharacter = [^\r\n\'\\]
   \.                             { return symbol(sym.DOT); }
   
   /* operators */
-  ","                            { return symbol(sym.COMMA);}
   "!"                            { return symbol(sym.NOT);}
   "&&"                           { return symbol(sym.AND);}
   \|\|                           { return symbol(sym.OR);}
@@ -141,11 +140,11 @@ SingleCharacter = [^\r\n\'\\]
 
   /* numeric literals */
   
-  {IntegerLiteral}               { return symbol(INTEGER_LITERAL, yytext()); }
+  {IntegerLiteral}               { return symbol(sym.INTEGER_LITERAL, yytext()); }
   
-  {FloatLiteral}                 { return symbol(FLOAT_LITERAL, yytext()); }
+  {FloatLiteral}                 { return symbol(sym.FLOAT_LITERAL, yytext()); }
 
-  {RationalLiteral}              { return symbol(RAT_LITERAL, yytext()); }
+  {RationalLiteral}              { return symbol(sym.RAT_LITERAL, yytext()); }
   
   /* comments */
   {Comment}                      { /* ignore */ }
@@ -154,11 +153,11 @@ SingleCharacter = [^\r\n\'\\]
   {WhiteSpace}                   { /* ignore */ }
 
   /* identifiers */ 
-  {Identifier}                   { return symbol(IDENTIFIER, yytext()); }  
+  {Identifier}                   { return symbol(sym.IDENTIFIER, yytext()); }  
 }
 
-<STRING> {
-  \"                             { yybegin(YYINITIAL); return symbol(STRING_LITERAL, string.toString()); }
+<STRINGLITERAL> {
+  \"                             { yybegin(YYINITIAL); return symbol(sym.STRING_LITERAL, string.toString()); }
   
   {StringCharacter}+             { string.append( yytext() ); }
   
@@ -171,8 +170,6 @@ SingleCharacter = [^\r\n\'\\]
   "\\\""                         { string.append( '\"' ); }
   "\\'"                          { string.append( '\'' ); }
   "\\\\"                         { string.append( '\\' ); }
-  \\[0-3]?{OctDigit}?{OctDigit}  { char val = (char) Integer.parseInt(yytext().substring(1),8);
-                                           string.append( val ); }
   
   /* error cases */
   \\.                            { throw new RuntimeException("Illegal escape sequence \""+yytext()+"\""); }
@@ -180,20 +177,17 @@ SingleCharacter = [^\r\n\'\\]
 }
 
 <CHARLITERAL> {
-  {SingleCharacter}\'            { yybegin(YYINITIAL); return symbol(CHAR_LITERAL, yytext().charAt(0)); }
+  {SingleCharacter}\'            { yybegin(YYINITIAL); return symbol(sym.CHAR_LITERAL, yytext().charAt(0)); }
   
   /* escape sequences */
-  "\\b"\'                        { yybegin(YYINITIAL); return symbol(CHAR_LITERAL, '\b');}
-  "\\t"\'                        { yybegin(YYINITIAL); return symbol(CHAR_LITERAL, '\t');}
-  "\\n"\'                        { yybegin(YYINITIAL); return symbol(CHAR_LITERAL, '\n');}
-  "\\f"\'                        { yybegin(YYINITIAL); return symbol(CHAR_LITERAL, '\f');}
-  "\\r"\'                        { yybegin(YYINITIAL); return symbol(CHAR_LITERAL, '\r');}
-  "\\\""\'                       { yybegin(YYINITIAL); return symbol(CHAR_LITERAL, '\"');}
-  "\\'"\'                        { yybegin(YYINITIAL); return symbol(CHAR_LITERAL, '\'');}
-  "\\\\"\'                       { yybegin(YYINITIAL); return symbol(CHAR_LITERAL, '\\'); }
-  \\[0-3]?{OctDigit}?{OctDigit}\' { yybegin(YYINITIAL); 
-                                          int val = Integer.parseInt(yytext().substring(1,yylength()-1),8);
-                                        return symbol(CHAR_LITERAL, (char)val); }
+  "\\b"\'                        { yybegin(YYINITIAL); return symbol(sym.CHAR_LITERAL, '\b');}
+  "\\t"\'                        { yybegin(YYINITIAL); return symbol(sym.CHAR_LITERAL, '\t');}
+  "\\n"\'                        { yybegin(YYINITIAL); return symbol(sym.CHAR_LITERAL, '\n');}
+  "\\f"\'                        { yybegin(YYINITIAL); return symbol(sym.CHAR_LITERAL, '\f');}
+  "\\r"\'                        { yybegin(YYINITIAL); return symbol(sym.CHAR_LITERAL, '\r');}
+  "\\\""\'                       { yybegin(YYINITIAL); return symbol(sym.CHAR_LITERAL, '\"');}
+  "\\'"\'                        { yybegin(YYINITIAL); return symbol(sym.CHAR_LITERAL, '\'');}
+  "\\\\"\'                       { yybegin(YYINITIAL); return symbol(sym.CHAR_LITERAL, '\\');}
   
   /* error cases */
   \\.                            { throw new RuntimeException("Illegal escape sequence \""+yytext()+"\""); }
