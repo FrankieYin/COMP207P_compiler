@@ -41,12 +41,12 @@ non terminal type_no_top, primitive_type, type, variable_type;
 non terminal dict_type,set_type, seq_type;
 non terminal dict_literal, dict_initialisers_opt, dict_initialiser;
 non terminal seq_literal, set_literal;
-non terminal expressions_opt, expressions, expression_opt, expression;
+non terminal expressions_opt, expressions, expression_opt, expression, statement_expression, assignment_expression;
 non terminal literals;
 non terminal operator, conditional_operator, numeric_operator, relational_operator, set_operator;
 non terminal lambda_expression, lambda_header, argument_list;
 non terminal block_only_statements, block_part_only_statements;
-non terminal block, block_part, block_main, block_part_main, block_while, block_part_while;
+non terminal block, block_statement, main_block, statements, block_part, block_part_main, block_while, block_part_while, statement, expression_statement;
 non terminal identifier, assignment, function_call;
 non terminal if_statement, if_body, if_statement_in_while, if_body_in_while;
 non terminal while_statement, forall_statement, forall_statement_in_while;
@@ -76,6 +76,11 @@ goal ::=
 compilation_unit ::=
 		type_declarations_opt main
 	;
+main ::=
+		MAIN LBRACE main_block RBRACE SEMI
+	;
+
+/* declarations*/
 type_declarations_opt ::=
 	| type_declarations_opt type_declaration
 	;
@@ -90,7 +95,7 @@ thread_declaration ::=
 		THREAD IDENTIFIER EQ LBRACE block RBRACE SEMI
 	;
 function_declaration ::=
-		function_header LPAREN formal_param_list RPAREN LBRACE block_main RBRACE SEMI
+		function_header LPAREN formal_param_list RPAREN LBRACE block RBRACE SEMI
 	;
 function_header ::=
 		FDEF type_no_top identifier
@@ -116,6 +121,8 @@ variable_declaration ::=
 type_aliasing ::=
 		ALIAS type_no_top identifier SEMI
 	;
+
+/* types */
 type_no_top ::=
 		primitive_type
 	| dict_type
@@ -165,6 +172,8 @@ seq_literal ::=
 set_literal ::=
 		LBRACE expressions_opt RBRACE
 	;
+
+/* expressions */
 expressions_opt ::=
 	| expressions
 	;
@@ -222,7 +231,7 @@ set_operator ::=
 		VBAR | INTERSECTION | DIFF
 	;
 lambda_expression ::=
-		lambda_header LBRACE block_only_statements RBRACE
+		lambda_header LBRACE statements RBRACE
 	| lambda_header expression
 	;
 lambda_header ::=
@@ -233,42 +242,38 @@ argument_list ::=
 	| argument_list COMMA IDENTIFIER
 	;
 
-main ::=
-		MAIN LBRACE block_main RBRACE SEMI
+/* statements */
+statements ::=
+		statement
+	| statements statement
 	;
-
-block_only_statements ::=
-		block_part_only_statements
-	| block_only_statements block_part_only_statements
-	;
-block_part_only_statements ::=
+statement ::=
 		if_statement
 	| while_statement
 	| forall_statement
 	| print_statement
 	| read_statement
 	| return_statement
-	| assignment
-	| function_call SEMI
+	| break_statement
+	| expression_statement
 	;
 block ::=
-	|	block block_part
+	|	block block_statement
 	;
-block_part ::=
-		block_part_only_statements
+main_block ::= // main block cannot be empty
+		block_statement
+	| main_block block_statement
+	;
+block_statement ::=
+		statement
 	| variable_declaration
 	| type_aliasing
 	| thread_declaration
-	;
-block_main ::=
-		block_part_main
-	| block_main block_part_main
-	;
-block_part_main ::=
-		block_part
 	| function_declaration
 	| data_type_declaration
 	;
+
+/*
 block_while ::=
 		block_part_while
 	| block_while block_part_while
@@ -280,21 +285,28 @@ block_part_while ::=
 	| print_statement
 	| return_statement
 	| read_statement
-	| assignment
-	| function_call SEMI
+	| expression_statement
 	| variable_declaration
 	| type_aliasing
 	| thread_declaration
 	| break_statement
 	;
+*/
 
+expression_statement ::=
+		statement_expression SEMI
+	;
+statement_expression ::=
+		assignment_expression
+	| function_call
+	;
+assignment_expression ::=
+		identifier EQ expressions
+	;
 identifier ::=
 		IDENTIFIER
 	| identifier DOT IDENTIFIER
 	| identifier LBRACK expression RBRACK
-	;
-assignment ::=
-		identifier EQ expressions SEMI
 	;
 function_call ::=
 		identifier LPAREN expressions_opt RPAREN
@@ -312,20 +324,24 @@ if_body ::=
 if_statement_in_while ::=
 		IF LPAREN expression RPAREN THEN if_body_in_while FI
 	;
+/*
 if_body_in_while ::=
 		block_while
 	| block_while ELSE block_while
 	| block_while ELIF LPAREN expression RPAREN THEN if_body_in_while
 	;
+*/
 while_statement ::=
-		WHILE LPAREN expression RPAREN DO block_while OD
+		WHILE LPAREN expression RPAREN DO block OD
 	;
 forall_statement ::=
 		FORALL LPAREN IDENTIFIER IN expression RPAREN DO block OD
 	;
+/*
 forall_statement_in_while ::=
 		FORALL LPAREN IDENTIFIER IN expression RPAREN DO block_while OD
 	;
+*/
 print_statement ::=
 		PRINT expression_opt SEMI
 	;
